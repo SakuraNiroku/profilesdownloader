@@ -6,6 +6,13 @@ import json
 import math
 import threading
 
+send_headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:137.0) Gecko/20100101 Firefox/137.0",
+        "Connection": "keep-alive",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2",
+        'Accept-Encoding':'gzip, deflate, br, zstd'}
+
 def check_dir_exists(dir_path):
   return os.path.exists(dir_path) and os.path.isdir(dir_path)
 
@@ -16,8 +23,10 @@ class dlthread (threading.Thread):   #继承父类threading.Thread
         self.url = url
         self.btn = btn
     def run(self):                   #把要执行的代码写到run函数里面 线程在创建后会直接运行run函数 
-        cursor = requests.get(self.url,stream=True)
+        print(f'Start Donwloading {self.url}')
+        cursor = requests.get(self.url,stream=True,headers=send_headers)
         size = int(cursor.headers['Content-Length'])
+        # size = 1
         downloaded = 0
 
         chunk = 4096
@@ -125,14 +134,18 @@ class ListApp:
         
         self.download_btn.config(text='Downloading...',state=tk.DISABLED)
 
-        parseurl = requests.get('https://api.hanximeng.com/lanzou/?url='+selected_item).json()
+        parseurl = requests.get('https://api.leafone.cn/api/lanzou?url= '+selected_item).json()
+        if parseurl['code'] == 203:
+            messagebox.showwarning("Warning", "Wait a minute to download again!")
+            self.download_btn.config(text='Download',state=tk.NORMAL)
+            return
         if parseurl['code'] != 200:
             messagebox.showwarning("Warning", "The content was removed!")
             self.download_btn.config(text='Download',state=tk.NORMAL)
             return
         
-        url = parseurl['downUrl']
-        name = parseurl['name']
+        url = parseurl['data']['url']
+        name = parseurl['data']['name']
 
         downloadth = dlthread(name,url,self.download_btn)
         downloadth.start()
